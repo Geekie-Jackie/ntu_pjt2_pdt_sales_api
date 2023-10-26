@@ -1,0 +1,100 @@
+version: 2.1
+
+# define orbs
+orbs:
+  docker: circleci/docker@2.4.0
+  snyk: snyk/snyk@2.0.1
+  maven: circleci/maven@1.4.1
+
+# define executors
+executors:
+  default-executor:
+    docker:
+      - image: cimg/openjdk:17.0.8
+
+# define jobs      
+jobs:
+  build: # Define the 'build' job
+    executor: default-executor
+    steps:
+      - checkout  # Check out your code from version control
+      
+      # Add a step to update the permissions of the mvnw file
+      - run:
+          name: Update mvnw permissions
+          command: chmod +x ./mvnw
+      
+      - run:
+          name: Build Spring Boot App
+          # Compile and package your Spring Boot app with Maven
+          command: |
+            ./mvnw clean package -DskipTests
+            mv target/pdt_sales-0.0.1-SNAPSHOT.jar app.jar
+      
+  test:
+    executor: default-executor
+    steps:
+      - checkout
+      - run:
+          name: Run 8 Spring Boot Unit Tests in 2 Java Files
+          command: |
+            mvn test 
+
+  synk_scan:
+    executor: default-executor
+    environment:
+      IMAGE_NAME: lohcd/pdt_sales
+
+    steps:
+      - checkout
+      - setup_remote_docker
+
+      - run:
+          name: Update mvnw permissions
+          command: chmod +x ./mvnw
+
+      - run:
+          name: Build Spring Boot App
+          command: ./mvnw clean package -DskipTests
+
+      - save_cache:
+          key: app-jar-{{ checksum "pom.xml" }}
+          paths:
+            - ./target/pdt_sales-0.0.1-SNAPSHOT.jar
+
+      - restore_cache:
+          key: app-jar-{{ checksum "pom.xml" }}
+
+      - run:
+          name: Build Docker image
+          command: docker build -t $IMAGE_NAME .
+
+      - snyk/scan:
+          docker-image-name: $IMAGE_NAME
+          severity-threshold: high
+
+# define workflows
+workflows:
+  version: 2
+  ci_flow:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only:
+                - develop
+      - test:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - develop
+      - synk_scan:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - develop
+
