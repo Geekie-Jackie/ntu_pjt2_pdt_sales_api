@@ -3,14 +3,13 @@ version: 2.1
 orbs:
   docker: circleci/docker@2.4.0
   snyk: snyk/snyk@2.0.1
-  # maven: circleci/maven@1.4.1
+  heroku: circleci/heroku@2.0.0
 
 executors:
   default-executor:
     docker:
       - image: cimg/openjdk:17.0.8
 
-# job test
 jobs:
   build: # Define the 'build' job
     executor: default-executor
@@ -28,7 +27,7 @@ jobs:
           command: |
             ./mvnw clean package -DskipTests
             mv target/pdt_sales-0.0.1-SNAPSHOT.jar app.jar
-      
+  # test job   
   test:
     executor: default-executor
     steps:
@@ -104,7 +103,30 @@ jobs:
           image: lohcd/pdt_sales
           tag: v1.0.0
 
-# 2 workflows: develop + release
+  deploy:
+    executor: default-executor
+    steps:
+      - setup_remote_docker
+      - heroku/install
+      - checkout
+      - run:
+          name: Login to Heroku Container Registry
+          command: heroku container:login
+
+      - run:
+          name: Pull Spring Boot App Image from Docker Hub
+          command: docker pull lohcd/pdt_sales:v1.0.0
+
+      - run:
+          name: Tag and Push the Image to Heroku Container Registry
+          command: |
+            docker tag lohcd/pdt_sales:v1.0.0 registry.heroku.com/group3-pdt-sales-api-devops/web
+            docker push registry.heroku.com/group3-pdt-sales-api-devops/web
+
+      - run:
+          name: Release the Heroku app
+          command: heroku container:release web -a group3-pdt-sales-api-devops
+
 workflows:
   version: 2
   ci_flow:
@@ -135,3 +157,41 @@ workflows:
             branches:
               only:
                 - develop
+  
+  # for release branch only
+  cicd_flow:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only:
+                - release
+      - test:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - release
+      - synk_scan:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - release
+      - build-and-push:
+          requires:
+            - test
+          filters:
+            branches:
+              only:
+                - release
+      - deploy:
+          requires:
+            - build-and-push
+          filters:
+            branches:
+              only:
+                - release  
+
