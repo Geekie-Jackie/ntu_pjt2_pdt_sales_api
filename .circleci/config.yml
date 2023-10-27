@@ -3,7 +3,7 @@ version: 2.1
 orbs:
   docker: circleci/docker@2.4.0
   snyk: snyk/snyk@2.0.1
-  maven: circleci/maven@1.4.1
+  # maven: circleci/maven@1.4.1
 
 executors:
   default-executor:
@@ -34,7 +34,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Run 8 Spring Boot Unit Tests in 2 Java Files
+          name: Run 10 Spring Boot Unit Tests in 2 Java Files
           command: |
             mvn test 
 
