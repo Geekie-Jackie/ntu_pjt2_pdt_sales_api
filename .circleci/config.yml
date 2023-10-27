@@ -10,7 +10,7 @@ executors:
     docker:
       - image: cimg/openjdk:17.0.8
 
-# define jobs
+# job test
 jobs:
   build: # Define the 'build' job
     executor: default-executor
