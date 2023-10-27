@@ -98,9 +98,11 @@ jobs:
           command: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_LOGIN" --password-stdin
 
       - docker/build:
-          image: lohcd/pdt_sales:v1.0.0
+          image: lohcd/pdt_sales
+          tag: v1.0.0
       - docker/push:
-          image: lohcd/pdt_sales:v1.0.0
+          image: lohcd/pdt_sales
+          tag: v1.0.0
 
 workflows:
   version: 2
