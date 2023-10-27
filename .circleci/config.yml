@@ -158,7 +158,8 @@ workflows:
             branches:
               only:
                 - develop
-
+  
+  # for release branch only
   cicd_flow:
     jobs:
       - build
