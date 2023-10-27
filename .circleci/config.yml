@@ -104,6 +104,7 @@ jobs:
           image: lohcd/pdt_sales
           tag: v1.0.0
 
+# 2 workflows
 workflows:
   version: 2
   ci_flow:
